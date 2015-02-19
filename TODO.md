@@ -7,6 +7,7 @@ Server
 
 Both
  * Versioning
+ * Resources (+ endpoints) description (check out swagger) for mocks generation / decorator speccing / documentation generation
 
 Other
  * Doc generation
