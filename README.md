@@ -5,7 +5,7 @@
 # Nymph
 
 
-Nymph (this one)[http://en.wikipedia.org/wiki/Nymph_(biology)] is a set of libraries which aims to facilitate the extraction of logic into services for Ruby apps.
+Nymph is a set of libraries which aims to facilitate the extraction of logic into services for Ruby apps.
 
 It offers a set of helpers for creating services which can then be either called locally or via HTTP. Included are also helpers for mocking/testing these services, and generating their documentation.
 
