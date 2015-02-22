@@ -1,9 +1,11 @@
 Client
+ * Indifferent access for mash
  * Includable in custom class (HTTParty-like)
 
 Server
  * Boot / environment / dependencies handling
  * Decorator helpers ??
+ * Logging
 
 Both
  * Versioning

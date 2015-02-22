@@ -7,6 +7,10 @@ module Nymph
   module Service
 
     def self.registered(app)
+      
+      app.disable :show_exceptions
+      app.disable :raise_errors
+      app.disable :protection
 
       # Respond with json
       app.before do
@@ -27,6 +31,7 @@ module Nymph
       app.error Sinatra::NotFound do
         not_found
       end
+
 
       app.helpers do
 
@@ -50,6 +55,19 @@ module Nymph
 
         def serialize_data(data)
           Yajl::Encoder.encode data
+        end
+
+        # Handle indifferent access
+        def params
+          # Query string and URL params
+          params = super
+
+          # Merge json body if present
+          if body_params = Yajl::Parser.parse(request.body)
+            params.merge! body_params
+          end            
+
+          indifferent_params(params)
         end
 
       end
