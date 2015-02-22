@@ -7,7 +7,7 @@ gem 'hashie'
 
 # Server
 gem 'sinatra'
-
+gem 'yajl-ruby', require: 'yajl'
 
 
 # Testing

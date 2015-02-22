@@ -1,11 +1,12 @@
 module Nymph
 
   require 'httparty'
+  require 'hashie/mash'
 
   class Client
 
     # Response
-    class Response < Struct.new(:status, :body)
+    class Response < Struct.new(:status, :data)
 
       # Helpers for common http codes
       def success?
@@ -14,11 +15,6 @@ module Nymph
 
       def not_found?
         status == 404
-      end
-
-      # Lazy JSON parsing
-      def data
-        @data ||= (status == 404) ? nil : JSON.parse(body)
       end
 
     end
@@ -45,7 +41,7 @@ module Nymph
         @type = :remote
         @host = host
       elsif service_class = service[:local]
-        raise ArgumentError('The provided local service isn\'t a valid Nymph service') unless service_class <= Nymph::Service 
+        raise ArgumentError, 'The provided local service isn\'t a valid Nymph service' unless valid_service?(service_class) 
         @type = :local
         @instance = service_class.new
       end
@@ -67,7 +63,8 @@ module Nymph
     # Verb-less methods
     def request(verb, path, params)
       status, body = fetch(verb, path, params)
-      Response.new(status, body)
+      body = nil if status == 404
+      Response.new status, parse_response(body)
     end
 
     def request!(verb, path, params)
@@ -92,6 +89,25 @@ module Nymph
         env = Rack::MockRequest.env_for(path, params: params)
         status, headers, body = @instance.call(env)
         [status, body.join]
+      end
+    end
+
+    def valid_service?(service_class)
+      service_class <= Sinatra::Base && service_class.extensions.include?(Nymph::Service)
+    end
+
+    def parse_response(body)
+      return nil if body.nil? || body.empty?
+
+      data = Yajl::Parser.parse(body)
+
+      case data
+      when Hash
+        Hashie::Mash.new data
+      when Array
+        data.map{ |item| Hashie::Mash.new item }
+      else
+        data
       end
     end
 
