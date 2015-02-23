@@ -1,5 +1,5 @@
 
-## This project is still highly a work in progress. The Readme in its state is more of a rough spec / todolist. Until 0.1, features may not be implemented yet
+This project is still highly a work in progress. The Readme in its state is more of a rough spec / todolist. Until 0.1, features may not be implemented yet
 
 
 # Nymph
@@ -9,133 +9,77 @@
 
 Nymph is a set of libraries which aims to facilitate the extraction of logic into services for Ruby apps.
 
-It offers a set of helpers for creating services which can then be either called locally or via HTTP. Included are also helpers for mocking/testing these services, and generating their documentation.
+It offers 2 abstractions : 
+ - a `service` which is a Sinatra app preconfigured with sane defaults for serving data over JSON
+ - a `client` allowing to call any service seamlessly, whether it is hosted or just code
 
 
+## Sample
 
-## Doc
-
-### Service
-
-Define your service as you would any sinatra application.
+Extract some of your logic into a service (keeping it in the same codebase)
 
 ```ruby
 require 'nymph/service'
 
-class CommentsService < Nymph::Service
-  
-  # Draper integration
-  respond_with_decorator CommentsDecorator
+class CommentsService < Sinatra::Base
 
-  get '/' do
-    if params[:post_id]
-      Comment.for_post(post_id).map(&:serialize)
-    else
-      Comment.all
-    end
-  end
+  register Nymph::Service
 
-  get '/:id' do
-    Comment.find(id)
-  end
-
+  # Add a comment
   post '/comment' do
-    comment = new Comment(
-      title: params[:title],
-      body: params[:body]
-    )
-
+    comment = Comment.new(params)
     if comment.save
-      comment
+      respond_with comment
     else
-      error 422, comment.errors
+      respond_with_error 422, comment.errors
     end
+  end
+
+  # Fetch a posts comments
+  get '/post/:post_id' do
+    respond_with Comment.where(post_id: params[:post_id]).all
   end
 
 end
 ```
 
-A few points to notice
- - nil values return a 404 by default
- - JSON body and GET params are accessible under the `params` helper
-
-
-### Client
-
-A client for the server we just defined can be instanciated in two ways : 
+Use a client to transparently call your service
 
 ```ruby
-# Locally
-comments = Nymph::Client.new(local: CommentsService)
+client = Nymph::Client.new(local: CommentsService)
 
-# Remotely
-comments = Nymph::Client.new(host: 'http://127.0.0.1:8383')
-```
-
-Once instanciated, you can access your service with the following syntax
-
-```ruby
-response = comments.get('/12')
-```
-
-The response is a mash with the following interface :
-```ruby
-response.status
-# => 200
+response = client.post '/comment', {
+  post_id: 42,
+  author_id: 12,
+  text: 'It was a long and stormy night ...'
+}
 
 response.success?
 # => true
 
+response.status
+# => 200
+
 comment = response.data
-comment.title
-# => "Hello World"
+comment.keys
+# => ['id', 'post_id', 'author_id', 'text', 'created_at']
+
+comment.id
+# => 3
 ```
 
-You can specify the verb and send params with your call :
-```ruby
-response = comments.post('/comment', title: 'Hello', text: 'World')
-```
-
-If you are only interested in the response body, you may use banged methods. 404s will return nil and responses with errors will raise an exception
-```ruby
-comment = Comment.get! '/42'
-comment.title
-# => "It worked!"
-
-comments = Comment.get! '/', post_id: 43
-comments.count
-# => 122
-comments.first.body
-# => "It was a long and stormy night ..."
-```
-
-Arguments are converted into paths automatically.
-```ruby
-class EventsService < Nymph::Service
-  get '/:event_id/applications' do
-    # [...]
-  end
-
-  get '/total' do
-    # [...]
-  end
-end
-
-response = events_service.get(event_id, :applications)
-```
-
-You may create a custom client via importing this functionality in a class of your choosing (for decorating results, or better calls)
+Have convenience methods for calling the service
 
 ```ruby
-class CommentsClient
-  
-  include Nymph::Client::Mixin
-  nymph_service local: CommentsServer
+comments = client.get! :post, 42 # equivalent to '/post/42'
 
-  def latest(n)
-    comments = get! '/comments', order: 'created_at', reverse_order: true
-    comments.first(n)
-  end
-
-end
+comments.first.text
+# => 'It was a long and stormy night'
 ```
+
+When you are ready, deploy your service separately, and change only one line in your app : 
+
+```ruby
+client = Nymph::Client.new(host: 'http://my-comments.herokuapp.com')
+```
+
