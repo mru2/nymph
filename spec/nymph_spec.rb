@@ -3,141 +3,137 @@ require 'spec_helper'
 describe Nymph::Client do
 
   # The tested service
-  class SampleService < Sinatra::Base
+  class CommentEntity < Grape::Entity
+    expose :id, documentation: { type: 'Integer', desc: 'Comment ID' }
+    expose :post_id, documentation: { type: 'Integer', desc: 'Comment\'s Post ID' }
+    expose :text, documentation: { type: 'String', desc: 'Comment\'s body' }
+  end
 
-    register Nymph::Service
+  class Comment
+    attr_reader :id, :post_id, :text
 
-    get '/foo' do
-      respond_with 'bar'
+    def initialize(id, post_id, text)
+      @id = id.to_i
+      @post_id = post_id.to_i
+      @text = text
     end
 
-    get '/splatted/url/handling' do
-      respond_with 'ok'
+    def entity
+      CommentEntity.new(self)
+    end
+  end
+
+
+  class SampleService < Grape::API
+
+    format :json
+
+    desc "Returns a comment's details"
+    params do
+      requires :id, type: Integer, desc: "The post's id"
+    end      
+    get ':id' do
+      if params[:id] == 404
+        error! 'Comment not found', 404
+      end
+
+      Comment.new(params[:id], 41, 'Lorem Ipsum')
     end
 
-    get '/splatted/with/params' do
-      respond_with params[:id].to_i
+    desc "Return a post's comments"
+    params do
+      requires :post_id, type: Integer, desc: "The post's id"
+    end      
+    get do
+      (1..3).map do |id|
+        Comment.new(id, params[:post_id], 'Hello World')
+      end
     end
 
-    get '/not_found' do
-      respond_with_none
-    end
 
-    get '/object' do
-      respond_with foo: 'foo', bar: 'bar'
+    desc "Post a new comment"
+    params do
+      requires :post_id, type: Integer, desc: "The post's id"
+      requires :text, type: String, desc: "The comment's body" 
     end
-
-    get '/collection' do
-      respond_with [ { foo: 'foo' }, { bar: 'bar' } ]
+    post do
+      comment = Comment.new(1, params[:post_id], params[:text])
+      comment
     end
-
-    post '/add_new' do
-      respond_with id: 1
-    end
-
-    get '/with_url/:id' do
-      respond_with id: params[:id].to_i
-    end
-
-    get '/with_query_string' do
-      respond_with id: params[:id].to_i
-    end
-
-    post '/with_body' do
-      respond_with id: params[:id].to_i
-    end
-
-    put '/invalid' do
-      respond_with_error 422, 'invalid parameters'
-    end
-
-    get '/server_error' do
-      raise "foo" # 500
-    end
-
   end
 
 
   shared_examples 'any client' do
 
-    it 'should send a request and receive a response' do
-      response = client.get('/foo')
+    context 'service communications' do
 
-      response.status.should == 200
-      response.data.should == 'bar'
+      it 'should fetch the comments and mash them' do
+
+        response = client.get 12
+        response.status.should == 200
+        response.success?.should == true
+
+        # Direct access
+        comment = response.data
+        comment.id.should == 12
+        comment.text.should == 'Lorem Ipsum'
+
+        # Hash access
+        comment[:post_id].should == 41
+
+      end
+
+
+      it 'should handle 404s' do
+
+        res = client.get 404
+        res.status.should == 404
+        res.success?.should == false
+        res.data.should  == nil
+
+      end
+
+
+      it 'should allow banged getters' do
+
+        comment = client.get! 3
+        comment.id.should == 3
+        comment.text.should == 'Lorem Ipsum'
+
+      end
+
+
+      it 'should handle parameters passing' do
+        comments = client.get! post_id: 12
+
+        comments.count.should == 3
+        comments.first.post_id.should == 12
+        comments.first.text.should == 'Hello World'
+
+        new_comment = client.post! post_id: 31, text: 'foobar'
+        new_comment.should == {
+          'id' => 1,
+          'post_id' => 31,
+          'text' => 'foobar'
+        }
+      end
+
+
+      it 'should handle malformed requests' do
+
+        res = client.get post: 31
+
+        res.success?.should == false
+        res.status.should == 400
+        res.error.should == 'post_id is missing'
+
+        expect{ client.get! post: 31 }.to raise_error Nymph::Client::Error
+
+      end
+
     end
 
-    it 'should handle 404s as having no data' do
-      response = client.get '/not_found'
 
-      response.success?.should == false
-      response.status.should == 404
-      response.data.should be_nil
-    end
-
-    it 'should have banged getters' do
-      client.get!('/foo').should == 'bar'
-    end
-
-    it 'should have calls via splatted urls' do
-      client.get!(:splatted, :url, :handling).should == 'ok'
-      client.get!(:splatted, :with, :params, id: 12).should == 12
-    end
-
-    it 'should handle objects in responses, with direct and indifferent access' do
-      data = client.get! :object
-      data.keys.should == ['foo', 'bar']
-      data.foo.should == 'foo'
-      data['foo'].should == 'foo'
-      data[:foo].should == 'foo'
-    end
-
-    it 'should handle collections in responses, with direct access' do
-      data = client.get! :collection
-      data.should == [{'foo' => 'foo'}, {'bar' => 'bar'}]
-      data.first.foo.should == 'foo'
-    end
-
-    it 'should handle other verbs' do
-      response = client.post '/add_new'
-      response.success?.should == true
-      response.data.should == {'id' => 1}
-    end
-
-    it 'should handle params passing in urls' do
-      data = client.get! :with_url, 32
-      data.id.should == 32
-    end
-
-    it 'should handle params passing in the query string' do
-      data = client.get! :with_query_string, id: 43
-      data.id.should == 43
-    end
-
-    it 'should handle params passing in the body' do
-      data = client.post! :with_body, id: 54
-      data.id.should == 54
-    end
-
-    it 'should catch and format errors' do
-      response = client.put '/invalid'
-      response.success?.should == false
-      response.status.should == 422
-      response.error.should == 'invalid parameters'
-    end
-
-    it 'should raise an error on banged failed gets' do
-      data = client.get! '/not_found'
-      data.should be_nil
-
-      expect { client.put! '/invalid' }.to raise_error(Nymph::Client::Error)
-    end
-
-    it 'should catch server errors and format them' do
-      response = client.get :server_error
-      response.status.should == 500
-      response.error.should == 'An unexpected error happened'
-    end
   end
 
 
@@ -153,7 +149,7 @@ describe Nymph::Client do
     before(:all) do
       @server = Thread.new{ Rack::Handler::WEBrick.run SampleService, Port: 19292 }
       puts "Waiting for server to boot"
-      sleep(1)
+      sleep(3)
     end
 
     after(:all) do

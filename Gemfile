@@ -6,7 +6,8 @@ gem 'httparty'
 gem 'hashie'
 
 # Server
-gem 'sinatra'
+gem 'grape'
+gem 'grape-entity'
 gem 'yajl-ruby', require: 'yajl'
 
 

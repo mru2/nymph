@@ -16,9 +16,7 @@ module Nymph
 
     def httparty_payload
       payload = get? ? { query: @params } : { body: json_body }
-      payload[:options] = {
-        headers: { 'Content-Type' => 'application/json' }
-      }
+      payload[:headers] = headers
       payload
     end
 

@@ -3,6 +3,7 @@ module Nymph
   require 'httparty'
   require 'hashie/mash'
   require 'nymph/request'
+  require 'yajl'
 
   class Client
 
@@ -11,7 +12,7 @@ module Nymph
 
       # Helpers for common http codes
       def success?
-        status == 200
+        status / 100 == 2
       end
 
       def not_found?
@@ -20,7 +21,7 @@ module Nymph
 
       def error
         return nil if success?
-        data.error.message
+        data.error
       end
 
     end
@@ -29,10 +30,7 @@ module Nymph
     # TODO : handle subclasses (timeouts, 500s, unauthorized, ...)
     class Error < StandardError
       def initialize(status, body)
-        @status = status
-
-        # TODO : better handle structured JSON errors
-        super(body)
+        super("Error #{status} : #{body}")
       end
     end
 
@@ -77,7 +75,7 @@ module Nymph
         [response.code, response.body]
       when :local
         status, headers, body = @instance.call(request.rack_env)
-        [status, body.join]
+        [status, body.body.join] # Body is a Rack::BodyProxy
       end
 
       Response.new status, parse_response(status, body)
@@ -85,10 +83,14 @@ module Nymph
 
     def request!(verb, *args)
       response = request(verb, *args)
-      if response.success? || response.not_found?
+      if response.success?
         response.data
       else
-        raise Error.new(response.status, response.data)
+        if response.status == 404 # Don't raise on 404s, just return nil
+          nil
+        else
+          raise Error.new(response.status, response.error)
+        end
       end
     end
 
@@ -96,7 +98,7 @@ module Nymph
     private
 
     def valid_service?(service_class)
-      service_class <= Sinatra::Base && service_class.extensions.include?(Nymph::Service)
+      service_class <= Grape::API
     end
 
     def parse_arguments(args)
