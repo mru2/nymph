@@ -40,7 +40,7 @@ module Nymph
     # @params service : The Nymph service to serve, which can be one of the following:
     # local: <ClassName> the service class (inheriting from Nymph::Service)
     # host: <String> a remote nymph service's hostname with port
-    def initialize(service)
+    def initialize(service, opts = {})
       if host = service[:host]
         @type = :remote
         @host = host

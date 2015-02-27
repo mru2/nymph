@@ -8,6 +8,8 @@ gem 'hashie'
 # Server
 gem 'grape'
 gem 'grape-entity'
+gem 'grape-swagger'
+
 gem 'yajl-ruby', require: 'yajl'
 
 
