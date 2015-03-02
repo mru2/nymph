@@ -144,9 +144,24 @@ describe Nymph::Client do
 
 
   context 'local service' do
-    it_behaves_like 'any client' do
-      let (:client) { Nymph::Client.new(local: SampleService) }
+
+    context 'standard client' do
+      it_behaves_like 'any client' do
+        let (:client) { Nymph::Client.local(SampleService) }
+      end
     end
+
+    context 'custom client' do
+      class CustomLocalClient
+        include Nymph::Client
+        local_service SampleService
+      end
+
+      it_behaves_like 'any client' do
+        let (:client) { CustomLocalClient.new }
+      end
+    end
+
   end
 
 
@@ -161,13 +176,29 @@ describe Nymph::Client do
     after(:all) do
       puts "Killing server"
       sleep(1)
-      Thread.kill(@server)      
+      Thread.kill(@server)
     end
 
-    it_behaves_like 'any client' do
-      let (:client) { Nymph::Client.new(host: "http://localhost:19292/") }
+    context 'standard client' do
+
+      it_behaves_like 'any client' do
+        let (:client) { Nymph::Client.remote('http://localhost:19292') }
+      end
+
     end
 
+    context 'custom client' do
+
+      class CustomRemoteClient
+        include Nymph::Client
+        remote_service 'http://localhost:19292'
+      end
+
+      it_behaves_like 'any client' do
+        let (:client) { CustomRemoteClient.new }
+      end
+
+    end
   end
 
 end
