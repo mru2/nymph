@@ -6,11 +6,14 @@ module Nymph
   require 'nymph/client/response'
   require 'nymph/client/error'
 
+
   module Client
+
 
     def self.included(base)
       base.extend ClassMethods
     end
+
 
     # =============
     # Configuration
@@ -36,6 +39,7 @@ module Nymph
       end
     end
 
+
     # ========================
     # Standard client creation
     # ========================
@@ -58,7 +62,9 @@ module Nymph
     end
 
 
+    # ==========================
     # Methods for each HTTP verb
+    # ==========================
     [:get, :post, :put, :delete, :path].each do |verb|
       define_method verb do |*args|
         request(verb, *args)
@@ -69,7 +75,10 @@ module Nymph
       end
     end
 
-    # Verb-less methods
+
+    # ===============
+    # Actual requests
+    # ===============
     def request(verb, *args)
       request = Request.build(verb, args)
 

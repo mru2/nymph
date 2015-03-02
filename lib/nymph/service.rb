@@ -20,6 +20,7 @@ module Nymph
     end
 
     # Generates the docs
+    # TODO : add validation that docs ARE specified
     def specs
       add_swagger_documentation(
         mount_path: '/specs', 
