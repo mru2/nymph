@@ -12,6 +12,5 @@ Still TODO :
 
  - Autogenerate client mocks from swagger spec
  - Autogenerate service integration tests from swagger spec
- - Make client extend `HTTParty`, to facilitate the creation of custom clients
  - Rails integration (generators, doc middleware)
 
