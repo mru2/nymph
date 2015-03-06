@@ -15,11 +15,11 @@ describe Nymph::Client do
       it 'should fetch the comments and mash them' do
 
         response = client.get :comment, 12
-        response.status.should == 200
+        response.code.should == 200
         response.success?.should == true
 
         # Direct access
-        comment = response.data
+        comment = response.parsed_response
         comment.id.should == 12
         comment.text.should == 'Lorem Ipsum'
 
@@ -32,9 +32,9 @@ describe Nymph::Client do
       it 'should handle 404s' do
 
         res = client.get :comment, 404
-        res.status.should == 404
+        res.code.should == 404
         res.success?.should == false
-        res.data.should  == nil
+        res.parsed_response.error.should == 'Comment not found'
 
       end
 
@@ -69,10 +69,10 @@ describe Nymph::Client do
         res = client.get :comments,  post: 31
 
         res.success?.should == false
-        res.status.should == 400
+        res.code.should == 400
         res.error.should == 'post_id is missing'
 
-        expect{ client.get! :comments, post: 31 }.to raise_error Nymph::Client::Error
+        expect{ client.get! :comments, post: 31 }.to raise_error HTTParty::Error
 
       end
 
@@ -93,11 +93,11 @@ describe Nymph::Client do
     context 'custom client' do
       class CustomLocalClient
         include Nymph::Client
-        local_service SampleService::Api
+        rack SampleService::Api
       end
 
       it_behaves_like 'any client' do
-        let (:client) { CustomLocalClient.new }
+        let (:client) { CustomLocalClient }
       end
     end
 
@@ -130,11 +130,11 @@ describe Nymph::Client do
 
       class CustomRemoteClient
         include Nymph::Client
-        remote_service 'http://localhost:19292'
+        base_uri 'http://localhost:19292'
       end
 
       it_behaves_like 'any client' do
-        let (:client) { CustomRemoteClient.new }
+        let (:client) { CustomRemoteClient }
       end
 
     end

@@ -4,6 +4,7 @@ source 'https://rubygems.org'
 # Client
 gem 'httparty'
 gem 'hashie'
+gem 'webmock'
 
 # Server
 gem 'grape'
