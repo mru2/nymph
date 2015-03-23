@@ -35,7 +35,6 @@ module SampleService
       end
     end
 
-
     desc "Post a new comment"
     params do
       requires :post_id, type: Integer, desc: "The post's id"
@@ -45,8 +44,6 @@ module SampleService
       comment = Comment.new(1, params[:post_id], params[:text])
       comment
     end
-
-    specs
 
   end
 

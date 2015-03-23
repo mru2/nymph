@@ -1,13 +1,13 @@
 require 'grape'
 require 'grape-entity'
-require 'grape-swagger'
+require 'grape/swagger_v2'
 
 module Nymph
 
   # Preconfigured grape with extensions
   module Service
 
-    def self.extended(base)      
+    def self.extended(base)
 
       base.format :json
 
@@ -17,17 +17,9 @@ module Nymph
         header['Access-Control-Request-Method'] = '*'
       end
 
-    end
+      base.extend Grape::SwaggerV2
 
-    # Generates the docs
-    # TODO : add validation that docs ARE specified
-    def specs
-      add_swagger_documentation(
-        mount_path: '/specs', 
-        hide_documentation_path: true, 
-        format: :json
-      )
-    end 
+    end
 
   end
 
