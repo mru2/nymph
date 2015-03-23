@@ -18,12 +18,12 @@ module Grape::SwaggerV2
       # TODO: Implement a Racc tokenizer to properly generate the
       # parsed path.
       parsed_path = parsed_path.gsub(/:([a-zA-Z_]\w*)/, '{\1}')
-      # add the version
+      # remove the version
       parsed_path.gsub('{version}', app.version)
     end
 
-    def is_swagger_doc?
-      path == '/swagger.json'
+    def include_in_doc?
+      route.route_version.present?
     end
 
     def verb
@@ -44,6 +44,8 @@ module Grape::SwaggerV2
     end
 
     def serialize_parameter(name, attrs)
+      binding.pry if attrs.empty?
+
       param_format = case
       when route.route_path.include?(":#{name}")
         'path'

@@ -15,7 +15,7 @@ module Grape::SwaggerV2
       app.routes.each do |route|
         route = Route.new(route, app)
 
-        next if route.is_swagger_doc?
+        next unless route.include_in_doc?
 
         register_route! route
       end

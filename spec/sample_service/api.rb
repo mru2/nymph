@@ -15,7 +15,7 @@ module SampleService
     params do
       requires :id, type: Integer, desc: "The post's id"
     end
-    get 'comment/:id' do
+    get '/comment/:id' do
       if params[:id] == 404
         error! 'Comment not found', 404
       end
@@ -28,8 +28,8 @@ module SampleService
     end
     params do
       requires :post_id, type: Integer, desc: "The post's id"
-    end      
-    get 'comments' do
+    end
+    get '/comments' do
       (1..3).map do |id|
         Comment.new(id, params[:post_id], 'Hello World')
       end
@@ -38,9 +38,9 @@ module SampleService
     desc "Post a new comment"
     params do
       requires :post_id, type: Integer, desc: "The post's id"
-      requires :text, type: String, desc: "The comment's body" 
+      requires :text, type: String, desc: "The comment's body"
     end
-    post 'comment' do
+    post '/comment' do
       comment = Comment.new(1, params[:post_id], params[:text])
       comment
     end

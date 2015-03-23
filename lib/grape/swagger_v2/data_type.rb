@@ -54,6 +54,8 @@ module Grape::SwaggerV2
     end
 
     def schema
+      return if source.nil?
+
       if PRIMITIVES.has_key? source
         PRIMITIVES[source]
       elsif source.is_a? Array

@@ -7,6 +7,7 @@ module Nymph
   # Preconfigured grape with extensions
   module Service
 
+    # Ordering matters (version in the end notably ...)
     def self.extended(base)
 
       base.format :json
@@ -18,6 +19,8 @@ module Nymph
       end
 
       base.extend Grape::SwaggerV2
+
+      base.version 'v1'
 
     end
 

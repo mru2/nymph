@@ -7,13 +7,17 @@ module Grape
   module SwaggerV2
 
     def self.extended(base)
-      base.get 'swagger.json' do
-        swagger_doc.to_json
-      end
-    end
 
-    def swagger_doc
-      @swagger_doc ||= Grape::SwaggerV2::Documentation.new(self).serialize
+      base.helpers do
+        def swagger_doc
+          @swagger_doc ||= Grape::SwaggerV2::Documentation.new(options[:for]).serialize
+        end
+      end
+
+      base.get '/swagger.json' do
+        swagger_doc
+      end
+
     end
 
   end
