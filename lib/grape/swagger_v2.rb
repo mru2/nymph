@@ -10,7 +10,7 @@ module Grape
 
       base.helpers do
         def swagger_doc
-          @swagger_doc ||= Grape::SwaggerV2::Documentation.new(options[:for]).serialize
+          options[:for].swagger_doc
         end
       end
 
@@ -19,6 +19,11 @@ module Grape
       end
 
     end
+
+    def swagger_doc
+      @swagger_doc ||= Grape::SwaggerV2::Documentation.new(self).serialize
+    end
+
 
   end
 

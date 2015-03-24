@@ -3,21 +3,18 @@ module Nymph
   require 'httparty'
   require 'nymph/httparty_extensions'
 
-  # require 'nymph/client/request'
-  # require 'nymph/client/response'
-  # require 'nymph/client/error'
-
-
   module Client
 
     def self.included(base)
       base.include HTTParty
       base.include HTTParty::ResponseBodyMash
       base.include HTTParty::RackProxy
+      base.include HTTParty::Prefix
       base.include HTTParty::SplattedPaths
       base.include HTTParty::BangedCalls
 
       base.format :json
+      base.prefix '/v1'
     end
 
 
